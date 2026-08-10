@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoPipe — Image Processing</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --success: #10b981;
+    }
+
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: var(--text-main);
+    }
+
+    .config-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .config-title {
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    input {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.6rem 0.8rem;
+      color: var(--text-main);
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .pipeline-diagram {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .tab {
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 3rem;
+      text-align: center;
+      cursor: pointer;
+      background: var(--card-bg);
+      transition: border-color 0.2s;
+    }
+
+    .dropzone:hover {
+      border-color: var(--primary);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.2rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.2rem;
+    }
+
+    .log-box {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      height: 150px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      margin-bottom: 0.4rem;
+    }
+
+    .log-time {
+      color: #6366f1;
+    }
+
+    .log-success {
+      color: #10b981;
+    }
+
+    .log-error {
+      color: #ef4444;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    th, td {
+      padding: 0.8rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.85rem;
+    }
+
+    th {
+      background: #111827;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--primary);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .result-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .preview-box {
+      width: 100%;
+      height: 160px;
+      background: #090d16;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .preview-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PhotoPipe — Image Processing</h1>
+    </header>
+
+    <div class="config-card">
+      <div class="config-title">▼ Azure Configuration</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label>Storage Account Name</label>
+          <input type="text" id="storageAccount" value="harshdeepphotopipe" />
+        </div>
+        <div class="input-group">
+          <label>Function App URL</label>
+          <input type="text" id="functionUrl" value="https://harshdeep-photopipe-func-h6ceardcf7dyczby.canadacentral-01.azurewebsites.net" />
+        </div>
+      </div>
+      <div class="input-group">
+        <label>SAS Token (starts with ?sv=)</label>
+        <input type="text" id="sasToken" placeholder="?sv=2022-11-02&ss=b&srt=co&sp=rwl..." />
+      </div>
+    </div>
+
+    <div class="pipeline-diagram">
+      Upload Image ──> [ Blob Storage ] ──> [ Event Grid ] ──┬──> [ process-image() ] ──> [ image-results ]<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;image-uploads&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System Topic&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└──> [ audit-log() ] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;──> [ Table Storage ]
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('upload')">Upload</div>
+      <div class="tab" id="tab-results-header" onclick="switchTab('results')">Results</div>
+      <div class="tab" id="tab-audit-header" onclick="switchTab('audit')">Audit Log</div>
+    </div>
+
+    <!-- TAB 1: UPLOAD -->
+    <div id="tab-upload" class="tab-content active">
+      <div class="dropzone" onclick="document.getElementById('fileInput').click()">
+        <h3>Drop an image here or click to browse</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Supports .jpg and .png files</p>
+        <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(this.files[0])" />
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="count-uploaded">0</div>
+          <div class="stat-label">Uploaded</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="count-processed">0</div>
+          <div class="stat-label">Processed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="count-audit">0</div>
+          <div class="stat-label">Audit Entries</div>
+        </div>
+      </div>
+
+      <div class="config-title">Activity Log</div>
+      <div class="log-box" id="activityLog">
+        <div class="log-entry"><span class="log-time">[System]</span> PhotoPipe ready. Configure settings and upload an image.</div>
+      </div>
+    </div>
+
+    <!-- TAB 2: RESULTS -->
+    <div id="tab-results" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3>Processing Results</h3>
+        <button class="btn" onclick="fetchResults()">Refresh</button>
+      </div>
+      <div class="cards-grid" id="resultsContainer"></div>
+    </div>
+
+    <!-- TAB 3: AUDIT LOG -->
+    <div id="tab-audit" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3>Audit Log</h3>
+        <button class="btn" onclick="fetchAuditLogs()">Refresh</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Blob Name</th>
+            <th>Content Type</th>
+            <th>Size</th>
+            <th>Event Type</th>
+            <th>Event Time</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="auditTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let uploadedCount = 0;
+
+    function log(message, type = 'info') {
+      const logBox = document.getElementById('activityLog');
+      const time = new Date().toLocaleTimeString();
+      let classAttr = 'log-time';
+      if (type === 'success') classAttr = 'log-success';
+      if (type === 'error') classAttr = 'log-error';
+
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="${classAttr}">[${time}]</span> ${message}`;
+      logBox.appendChild(entry);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      if (tabName === 'upload') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('tab-upload').classList.add('active');
+      } else if (tabName === 'results') {
+        document.getElementById('tab-results-header').classList.add('active');
+        document.getElementById('tab-results').classList.add('active');
+        fetchResults();
+      } else if (tabName === 'audit') {
+        document.getElementById('tab-audit-header').classList.add('active');
+        document.getElementById('tab-audit').classList.add('active');
+        fetchAuditLogs();
+      }
+    }
+
+    async function handleFileUpload(file) {
+      if (!file) return;
+
+      const storageAccount = document.getElementById('storageAccount').value.trim();
+      const sasToken = document.getElementById('sasToken').value.trim();
+
+      if (!storageAccount || !sasToken) {
+        alert('Please fill in your Storage Account Name and SAS Token.');
+        return;
+      }
+
+      const formattedSas = sasToken.startsWith('?') ? sasToken : `?${sasToken}`;
+      const blobName = `${Date.now()}-${file.name}`;
+      const uploadUrl = `https://${storageAccount}.blob.core.windows.net/image-uploads/${blobName}${formattedSas}`;
+
+      log(`Uploading ${file.name} (${(file.size / 1024).toFixed(1)} KB) to Blob Storage...`);
+
+      try {
+        const response = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'x-ms-blob-type': 'BlockBlob',
+            'Content-Type': file.type
+          },
+          body: file
+        });
+
+        if (response.ok) {
+          uploadedCount++;
+          document.getElementById('count-uploaded').innerText = uploadedCount;
+          log(`Uploaded ${file.name} successfully. Event Grid will trigger processing...`, 'success');
+
+          // Auto-fetch updates after 3 seconds
+          setTimeout(() => {
+            fetchResults();
+            fetchAuditLogs();
+          }, 3000);
+        } else {
+          log(`Upload failed with status ${response.status}`, 'error');
+        }
+      } catch (err) {
+        log(`Error uploading file: ${err.message}`, 'error');
+      }
+    }
+
+    async function fetchResults() {
+      const functionUrl = document.getElementById('functionUrl').value.trim().replace(/\/$/, '');
+      if (!functionUrl) return;
+
+      try {
+        const res = await fetch(`${functionUrl}/api/get-results`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.results || []);
+
+        document.getElementById('count-processed').innerText = items.length;
+        document.getElementById('tab-results-header').innerText = `Results (${items.length})`;
+
+        const container = document.getElementById('resultsContainer');
+        container.innerHTML = '';
+
+        if (items.length === 0) {
+          container.innerHTML = '<p style="color: var(--text-muted);">No processed image metadata found.</p>';
+          return;
+        }
+
+        items.forEach(item => {
+          const blobName = item.blob_name || item.BlobName || item.RowKey || item.name || 'Processed Image';
+          const contentType = item.content_type || item.ContentType || 'image/png';
+          const size = item.size || item.Size || item.content_length || 'Unknown';
+          const dimensions = item.dimensions || item.Dimensions || item.width ? `${item.width}x${item.height}` : 'N/A';
+          const blobUrl = item.blob_url || item.BlobUrl || item.url || '';
+          const processedAt = formatDate(item.processed_at || item.ProcessedAt || item.Timestamp);
+
+          const card = document.createElement('div');
+          card.className = 'result-card';
+          card.innerHTML = `
+            <div class="preview-box">
+              ${blobUrl ? `<img src="${blobUrl}" alt="Preview" onerror="this.parentNode.innerHTML='Preview not available'"/>` : 'Preview not available'}
+            </div>
+            <strong style="word-break: break-all;">${blobName}</strong>
+            <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+              <div>Status: <span class="badge">Success</span></div>
+              <div>Size: ${formatBytes(size)}</div>
+              <div>Type: ${contentType}</div>
+              <div>Dimensions: ${dimensions}</div>
+              <div>Processed At: ${processedAt}</div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Failed to fetch results:', err);
+      }
+    }
+
+    async function fetchAuditLogs() {
+      const functionUrl = document.getElementById('functionUrl').value.trim().replace(/\/$/, '');
+      if (!functionUrl) return;
+
+      try {
+        const res = await fetch(`${functionUrl}/api/get-audit-log`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.logs || []);
+
+        document.getElementById('count-audit').innerText = items.length;
+        document.getElementById('tab-audit-header').innerText = `Audit Log (${items.length})`;
+
+        const tbody = document.getElementById('auditTableBody');
+        tbody.innerHTML = '';
+
+        if (items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No audit log entries found.</td></tr>';
+          return;
+        }
+
+        items.forEach(item => {
+          // Robust key extraction fallback for any casing format
+          const rawBlobUrl = item.BlobUrl || item.blob_url || item.blobUrl || '';
+          const extractedBlobName = rawBlobUrl ? rawBlobUrl.split('/').pop() : '';
+
+          const blobName = item.blob_name || item.BlobName || item.blobName || extractedBlobName || item.RowKey || 'blob-entry';
+          const contentType = item.content_type || item.ContentType || item.contentType || 'image/png';
+          const size = item.size || item.Size || item.content_length || 0;
+          const eventType = item.event_type || item.EventType || item.eventType || 'Microsoft.Storage.BlobCreated';
+          const eventTime = formatDate(item.event_time || item.EventTime || item.eventTime || item.Timestamp);
+          const status = item.status || item.Status || 'Success';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="word-break: break-all; font-family: monospace;">${blobName}</td>
+            <td>${contentType}</td>
+            <td>${formatBytes(size)}</td>
+            <td>${eventType}</td>
+            <td>${eventTime}</td>
+            <td><span class="badge">${status}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('Failed to fetch audit log:', err);
+      }
+    }
+
+    function formatDate(rawDate) {
+      if (!rawDate) return new Date().toLocaleString();
+      const d = new Date(rawDate);
+      return isNaN(d.getTime()) ? new Date().toLocaleString() : d.toLocaleString();
+    }
+
+    function formatBytes(bytes) {
+      const num = parseInt(bytes, 10);
+      if (isNaN(num) || num === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(num) / Math.log(k));
+      return parseFloat((num / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Initial load
+    fetchAuditLogs();
+    fetchResults();
+  </script>
+</body>
+</html>
