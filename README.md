@@ -4,9 +4,9 @@ PhotoPipe is an event-driven, serverless cloud architecture built on Azure. It a
 
 ---
 
-## 🎥 Demo Video
+##  Demo Video
 
 Watch the 5-minute project demonstration on YouTube:  
-**[https://youtu.be/rIAGnNA_zdI]**
+**[https://youtu.be/Q31PXn_rRio]**
 
 ---
